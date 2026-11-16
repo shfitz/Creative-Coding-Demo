@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrightSprite — cut a sprite, chase the brightest pixel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/p5@2.3.4/lib/p5.min.js"></script>
+    <script type="module">
+        // Depth model, via transformers.js. A module script so the import can be
+        // a plain ES import; sketch.js waits for window.HF before starting.
+        import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5";
+        window.HF = { pipeline };
+    </script>
+</head>
+<body>
+    <script src="sketch.js"></script>
+</body>
+</html>

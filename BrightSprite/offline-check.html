@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrightSprite — offline check</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/p5@2.3.4/lib/p5.min.js"></script>
+<script>
+/* Stand-ins for the camera and ml5, so the real sketch.js can be exercised with
+   no webcam and no model download.
+
+   Both seams are ordinary function declarations in sketch.js (openCamera,
+   loadDepthModel, runDepthModel), which are window properties — so overriding
+   them from here is all it takes. Nothing reaches into p5's internals: p5 2.0
+   binds its globals at start-up, so anything installed on window before then
+   gets clobbered. */
+
+window.__errors = [];
+window.addEventListener("error", function (e) {
+  window.__errors.push(String(e.message) + " @ " + e.filename + ":" + e.lineno);
+});
+
+window.__camPattern = { square: { x: 96, y: 96, w: 208, h: 208, gray: 200 } };
+
+window.paintCam = function (opts) {
+  let o = opts;
+  if (opts === undefined) o = window.__camPattern;
+  const g = window.__fakeCam;
+  if (!g) return;
+  g.clear();
+  g.background(0);
+  g.noStroke();
+  if (o && o.square) {
+    g.fill(o.square.gray);
+    g.rect(o.square.x, o.square.y, o.square.w, o.square.h);
+  }
+};
+
+window.__fakeCapture = function () {
+  const g = window.createGraphics(800, 600);
+  g.pixelDensity(1);
+  window.__fakeCam = g;
+  window.paintCam();
+  if (window.__camTimer) clearInterval(window.__camTimer);
+  window.__camTimer = setInterval(function () { window.paintCam(); }, 150);
+  return g;
+};
+</script>
+<script src="sketch.js"></script>
+<script>
+/* These land after sketch.js so they replace its own function declarations. */
+
+window.__tensorCalls = 0;
+
+window.openCamera = async function () {
+  return window.__fakeCapture();
+};
+
+window.loadDepthModel = async function () {
+  // depthPipe is a `let` in sketch.js, so assign it as a bare identifier —
+  // window.depthPipe would only shadow it, not replace the sketch's binding.
+  depthPipe = { __stub: true };
+  depthDevice = "webgpu";
+};
+
+// A raw depth tensor in the shape the model returns: { data, dims: [h, w] },
+// larger values = nearer. The near block lands as exactly the 200x200 square at
+// (100, 100) the checks below expect.
+window.__makeTensor = function () {
+  const w = 320;
+  const h = 240;
+  const data = new Float32Array(w * h);
+  for (let y = 40; y < 120; y++) {
+    for (let x = 40; x < 120; x++) data[y * w + x] = 1;
+  }
+  return { data, dims: [h, w] };
+};
+
+window.runDepthModel = async function () {
+  window.__tensorCalls++;
+  return window.__makeTensor();
+};
+</script>
+</head>
+<body></body>
+</html>
